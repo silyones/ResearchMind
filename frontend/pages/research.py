@@ -1,7 +1,6 @@
 import streamlit as st
 import httpx
 import json
-from datetime import datetime
 
 
 def render_research_page(session_id: str) -> None:
@@ -24,6 +23,8 @@ def render_research_page(session_id: str) -> None:
     
     # Non-streaming research
     if search_button and topic:
+        # Clear old results immediately
+        st.session_state.last_research = None
         st.session_state.current_topic = topic
         
         try:
@@ -52,6 +53,8 @@ def render_research_page(session_id: str) -> None:
     
     # Streaming research
     if stream_button and topic:
+        # Clear old results immediately
+        st.session_state.last_research = None
         st.session_state.current_topic = topic
         
         try:
@@ -78,16 +81,17 @@ def render_research_page(session_id: str) -> None:
                                 break
                             else:
                                 accumulated_text += chunk
-                                # Show a simple progress message, not raw JSON
                                 status_placeholder.info("📡 Receiving research data...")
                     
-                    # Clear the progress message
                     status_placeholder.empty()
                     stream_placeholder.empty()
                     
-                    # Parse and store result
                     try:
-                        research_data = json.loads(accumulated_text)
+                        clean_text = accumulated_text.strip()
+                        json_start = clean_text.find('{')
+                        if json_start != -1:
+                            clean_text = clean_text[json_start:]
+                        research_data = json.loads(clean_text)
                         st.session_state.last_research = research_data
                         st.success("✅ Research complete!")
                     except json.JSONDecodeError:
@@ -101,7 +105,7 @@ def render_research_page(session_id: str) -> None:
             st.error(f"❌ Streaming error: {str(e)}")
     
     # Display research results
-    if hasattr(st.session_state, "last_research") and st.session_state.last_research:
+    if st.session_state.get("last_research"):
         research = st.session_state.last_research
         
         st.divider()
