@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
-from typing import List, Dict
+from fastapi.responses import StreamingResponse
+from typing import List, Dict, AsyncGenerator
 from backend.models.schemas import ResearchRequest, ResearchResponse
 from backend.services.research import conduct_research, followup_research
 from backend.memory.memory_manager import get_history
@@ -81,6 +82,64 @@ async def followup_endpoint(
     )
     
     return response
+
+
+@router.post("/research/stream", response_class=StreamingResponse)
+async def research_stream_endpoint(
+    request: ResearchRequest,
+    session_id: str = Query("default", description="Session identifier for memory management")
+) -> StreamingResponse:
+    """
+    Stream research results token-by-token using Server-Sent Events (SSE) format.
+    
+    Args:
+        request: ResearchRequest with topic field
+        session_id: Unique session identifier (default: "default")
+    
+    Returns:
+        StreamingResponse with tokens in SSE format
+    """
+    logger.info(f"Stream research request for topic: '{request.topic}' (session: {session_id})")
+    
+    async def stream_generator() -> AsyncGenerator[str, None]:
+        """Generate research results and stream as tokens."""
+        try:
+            # Run research
+            yield f"data: Starting research on '{request.topic}'...\n\n"
+            
+            response = await conduct_research(
+                topic=request.topic,
+                session_id=session_id
+            )
+            
+            if response.success and response.data:
+                # Convert ResearchBrief to JSON and stream it token by token
+                import json
+                research_json = response.data.model_dump_json(by_alias=False)
+                
+                # Stream the JSON character by character to simulate token streaming
+                chunk_size = 50
+                for i in range(0, len(research_json), chunk_size):
+                    chunk = research_json[i:i + chunk_size]
+                    yield f"data: {chunk}\n\n"
+                
+                yield "data: [DONE]\n\n"
+            else:
+                error_msg = response.error or "Unknown error"
+                yield f"data: [ERROR] {error_msg}\n\n"
+        
+        except Exception as e:
+            logger.error(f"Error in stream research: {str(e)}")
+            yield f"data: [ERROR] {str(e)}\n\n"
+    
+    return StreamingResponse(
+        stream_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        }
+    )
 
 
 @router.get("/history/{session_id}")

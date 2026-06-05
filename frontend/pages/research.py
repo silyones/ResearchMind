@@ -1,5 +1,6 @@
 import streamlit as st
 import httpx
+import json
 from datetime import datetime
 
 
@@ -13,7 +14,7 @@ def render_research_page(session_id: str) -> None:
     st.header("🔍 Research")
     
     # Research input section
-    col1, col2 = st.columns([4, 1])
+    col1, col2, col3 = st.columns([3, 1, 1])
     
     with col1:
         topic = st.text_input(
@@ -25,7 +26,10 @@ def render_research_page(session_id: str) -> None:
     with col2:
         search_button = st.button("🔎 Research", use_container_width=True)
     
-    # Process research request
+    with col3:
+        stream_button = st.button("📡 Stream", use_container_width=True)
+    
+    # Process research request (non-streaming)
     if search_button and topic:
         st.session_state.current_topic = topic
         
@@ -55,9 +59,60 @@ def render_research_page(session_id: str) -> None:
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
     
+    # Process streaming research request
+    if stream_button and topic:
+        st.session_state.current_topic = topic
+        
+        try:
+            with st.spinner("📡 Streaming research..."):
+                # Create placeholder for streaming text
+                stream_placeholder = st.empty()
+                accumulated_text = ""
+                
+                # Call streaming endpoint
+                with httpx.stream(
+                    "POST",
+                    "http://localhost:8000/research/stream",
+                    json={"topic": topic},
+                    params={"session_id": session_id},
+                    timeout=300,
+                ) as response:
+                    if response.status_code == 200:
+                        for line in response.iter_lines():
+                            if line.startswith("data: "):
+                                chunk = line.replace("data: ", "").strip()
+                                
+                                if chunk == "[DONE]":
+                                    st.success("✅ Streaming complete!")
+                                    break
+                                elif chunk.startswith("[ERROR]"):
+                                    st.error(f"❌ {chunk}")
+                                    break
+                                else:
+                                    accumulated_text += chunk
+                                    # Show accumulating text
+                                    with stream_placeholder.container():
+                                        st.code(accumulated_text, language="json", line_numbers=False)
+                        
+                        # Try to parse final JSON
+                        try:
+                            research_data = json.loads(accumulated_text)
+                            st.session_state.last_research = research_data
+                        except json.JSONDecodeError:
+                            st.warning("Could not parse final JSON, but stream completed.")
+                    else:
+                        st.error(f"Stream failed with status {response.status_code}")
+        
+        except httpx.ConnectError:
+            st.error("❌ Cannot connect to backend. Make sure it's running on http://localhost:8000")
+        except Exception as e:
+            st.error(f"❌ Streaming error: {str(e)}")
+    
     # Display research results
     if hasattr(st.session_state, "last_research") and st.session_state.last_research:
         research = st.session_state.last_research
+        
+        st.divider()
         
         # Title and overview
         st.header(research.get("topic", "Research Results"))
@@ -112,5 +167,6 @@ def render_research_page(session_id: str) -> None:
             st.caption(f"Generated at: {generated_at}")
             st.caption(f"Session: `{session_id}`")
     
-    elif not topic and search_button:
+    elif not topic and (search_button or stream_button):
         st.warning("⚠️ Please enter a topic to research")
+
