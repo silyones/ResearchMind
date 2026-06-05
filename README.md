@@ -78,19 +78,35 @@ ResearchMind/
 
 5. **Run the application**
 
-   **Backend:**
+   **Option A: From project root (Recommended)**
+   
+   Backend (Terminal 1):
    ```bash
-   cd backend
-   python main.py
-   # OR
-   uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   python run_backend.py
+   ```
+   
+   Frontend (Terminal 2):
+   ```bash
+   streamlit run run_frontend.py
    ```
 
-   **Frontend (in another terminal):**
+   **Option B: Using Python modules**
+   
+   Backend:
+   ```bash
+   python -m backend.main
+   ```
+   
+   Frontend:
    ```bash
    cd frontend
    streamlit run app.py
    ```
+
+6. **Access the application**
+   - Frontend: http://localhost:8501
+   - Backend API: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
 
 ## Configuration
 
@@ -110,11 +126,26 @@ Once the backend is running, access interactive API documentation at:
 
 ## Testing
 
-Run tests with pytest:
+Run tests with pytest from the project root:
 
 ```bash
 pytest tests/ -v
 pytest tests/ -v --cov=backend
+```
+
+Or test individual endpoints:
+```bash
+# Health check
+curl http://localhost:8000/health
+
+# Research endpoint
+curl -X POST http://localhost:8000/research \
+  -H "Content-Type: application/json" \
+  -d '{"topic":"Climate Change"}' \
+  -G --data-urlencode "session_id=default"
+
+# Get history
+curl http://localhost:8000/history/default
 ```
 
 ## Development

@@ -14,7 +14,7 @@ base_parser = PydanticOutputParser(pydantic_object=ResearchBrief)
 # Create LLM for fixing malformed output
 fixing_llm = ChatGroq(
     api_key=settings.groq_api_key,
-    model_name=settings.model_name,
+    model_name=settings.model_name_llm,
     temperature=0,
 )
 

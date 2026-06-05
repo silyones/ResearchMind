@@ -54,7 +54,7 @@ async def synthesize(topic: str, raw_results: str) -> ResearchBrief:
         # Initialize Groq LLM
         llm = ChatGroq(
             api_key=settings.groq_api_key,
-            model_name=settings.model_name,
+            model_name=settings.model_name_llm,
             temperature=0.3,
             max_tokens=2048,
         )

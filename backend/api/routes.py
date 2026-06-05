@@ -24,7 +24,7 @@ async def health_check() -> Dict[str, str]:
     logger.debug("Health check request received")
     return {
         "status": "ok",
-        "model": settings.model_name,
+        "model": settings.model_name_llm,
     }
 
 

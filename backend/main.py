@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import asyncio
 import uvicorn
 from fastapi import FastAPI
@@ -34,7 +40,7 @@ async def startup_event():
     logger.info("=" * 60)
     logger.info("ResearchMind backend started")
     logger.info(f"Environment: {settings.env}")
-    logger.info(f"Model: {settings.model_name}")
+    logger.info(f"Model: {settings.model_name_llm}")
     logger.info(f"LangSmith Tracing: {settings.langsmith_tracing}")
     logger.info(f"Max Agent Iterations: {settings.max_agent_iterations}")
     logger.info(f"Host: {settings.fastapi_host}")

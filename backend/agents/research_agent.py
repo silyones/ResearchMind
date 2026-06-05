@@ -58,7 +58,7 @@ async def run_research(topic: str) -> ResearchBrief:
         # Initialize Groq LLM for the agent
         llm = ChatGroq(
             api_key=settings.groq_api_key,
-            model_name=settings.model_name,
+            model_name=settings.model_name_llm,
             temperature=0.3,
         )
         

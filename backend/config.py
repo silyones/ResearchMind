@@ -11,12 +11,12 @@ class Settings(BaseSettings):
     langsmith_api_key: str
     
     # Model Configuration
-    model_name: str = "llama-3.3-70b-versatile"
+    model_name_llm: str = "llama-3.3-70b-versatile"
     max_search_results: int = 5
     max_agent_iterations: int = 10
     
     # LangSmith Configuration
-    langsmith_tracing: bool = True
+    langsmith_tracing: bool = False
     langsmith_endpoint: str = "https://api.smith.langchain.com"
     langchain_project: str = "research_mind"
     
@@ -34,8 +34,10 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "env_file_encoding": "utf-8",
         "case_sensitive": False,
+        "protected_namespaces": ("settings_",),
     }
 
 
 # Global settings instance
 settings = Settings()
+
