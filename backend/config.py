@@ -1,0 +1,41 @@
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
+    
+    # API Keys
+    groq_api_key: str
+    tavily_api_key: str
+    langsmith_api_key: str
+    
+    # Model Configuration
+    model_name: str = "llama-3.3-70b-versatile"
+    max_search_results: int = 5
+    max_agent_iterations: int = 10
+    
+    # LangSmith Configuration
+    langsmith_tracing: bool = True
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
+    langchain_project: str = "research_mind"
+    
+    # FastAPI Configuration
+    fastapi_host: str = "0.0.0.0"
+    fastapi_port: int = 8000
+    
+    # Runtime Configuration
+    streaming: bool = True
+    request_timeout: int = 60
+    log_level: str = "INFO"
+    env: str = "development"
+    
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+    }
+
+
+# Global settings instance
+settings = Settings()
