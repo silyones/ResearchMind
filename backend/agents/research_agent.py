@@ -83,8 +83,9 @@ async def run_research(topic: str) -> ResearchBrief:
             agent=agent,
             tools=tools,
             verbose=True,
-            max_iterations=settings.max_agent_iterations,
+            max_iterations=5,
             handle_parsing_errors=True,
+            #early_stopping_method="generate",
         )
         
         logger.info(f"Running agent for topic: '{topic}'")
@@ -94,7 +95,7 @@ async def run_research(topic: str) -> ResearchBrief:
         agent_result = await loop.run_in_executor(
             None,
             lambda: agent_executor.invoke(
-                {"topic": topic, "agent_scratchpad": ""}
+                {"input": f"Research the following topic and gather comprehensive information: {topic}"}
             ),
         )
         
@@ -102,6 +103,7 @@ async def run_research(topic: str) -> ResearchBrief:
         raw_output = agent_result.get("output", "")
         logger.info(f"Agent completed research gathering for topic: '{topic}'")
         logger.debug(f"Agent raw output length: {len(raw_output)} characters")
+        logger.debug(f"Agent output: {raw_output[:500]}")
         
         # Synthesize the gathered information into ResearchBrief
         logger.info("Starting synthesis phase...")

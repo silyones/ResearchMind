@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from typing import Optional
 
 
@@ -11,7 +12,8 @@ class Settings(BaseSettings):
     langsmith_api_key: str
     
     # Model Configuration
-    model_name_llm: str = "llama-3.3-70b-versatile"
+    model_name: str = Field(default="llama-3.1-8b-instant", validation_alias="MODEL_NAME")
+    model_name_llm: str = Field(default="llama-3.1-8b-instant", validation_alias="MODEL_NAME_LLM")
     max_search_results: int = 5
     max_agent_iterations: int = 10
     
