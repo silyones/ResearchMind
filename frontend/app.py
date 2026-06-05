@@ -1,7 +1,7 @@
 import streamlit as st
-from components.sidebar import render_sidebar
-from pages.research import render_research_page
-from pages.history import render_history_page
+from frontend.components.sidebar import render_sidebar
+from frontend.pages.research import render_research_page
+from frontend.pages.history import render_history_page
 
 
 def main():

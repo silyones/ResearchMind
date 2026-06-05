@@ -12,25 +12,14 @@ logger = get_logger(__name__)
 # Define the synthesis prompt
 SYNTHESIS_PROMPT = PromptTemplate(
     input_variables=["topic", "raw_results"],
-    template="""You are an expert research synthesizer. Your task is to organize and synthesize raw research data into a comprehensive research brief.
+    template="""Synthesize this research into valid JSON matching the schema.
 
 Topic: {topic}
+Results: {raw_results}
 
-Raw Research Results:
-{raw_results}
+Format: {format_instructions}
 
-Format Instructions:
-{format_instructions}
-
-Based on the raw results above, create a comprehensive research brief with:
-1. An overview of the topic
-2. Key findings (with source URLs)
-3. Controversies or debates
-4. Expert opinions
-5. A conclusion
-6. All sources used
-
-Return ONLY valid JSON matching the format instructions above. Do not include any additional text.""",
+Return ONLY valid JSON. No extra text.""",
 )
 
 
@@ -56,7 +45,7 @@ async def synthesize(topic: str, raw_results: str) -> ResearchBrief:
             api_key=settings.groq_api_key,
             model_name=settings.model_name_llm,
             temperature=0.3,
-            max_tokens=2048,
+            max_tokens=1024,
         )
         
         # Create the LLMChain
