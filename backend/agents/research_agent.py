@@ -1,5 +1,4 @@
 import asyncio
-from typing import List, Dict, Any
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_groq import ChatGroq
 from langchain.tools import Tool
@@ -56,16 +55,20 @@ async def run_research(topic: str) -> ResearchBrief:
             ),
         )
         
-        # Get agent final output
-        raw_output = agent_result.get("output", "")
+        # Get agent final answer text
+        final_answer = agent_result.get("output", "")
         
-        # If agent hit iteration limit, extract from intermediate steps instead
-        if not raw_output.strip() or "iteration limit" in raw_output or "time limit" in raw_output:
-            logger.warning("Agent hit iteration limit, extracting from intermediate steps...")
-            steps = agent_result.get("intermediate_steps", [])
-            raw_output = "\n".join(
-                str(step[1]) for step in steps if step and len(step) > 1
-            )
+        # Always extract raw search results from intermediate steps
+        # so synthesis chain has real URLs and source data
+        steps = agent_result.get("intermediate_steps", [])
+        search_results = "\n".join(
+            str(step[1]) for step in steps if step and len(step) > 1
+        )
+        
+        if search_results:
+            raw_output = f"Agent Final Answer: {final_answer}\n\nRaw Search Results:\n{search_results}"
+        else:
+            raw_output = final_answer
         
         logger.info(f"Agent completed for topic: '{topic}', output length: {len(raw_output)}")
         
