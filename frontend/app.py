@@ -25,7 +25,7 @@ def main():
     session_id = render_sidebar()
     
     # Main content area with tabs
-    tab1, tab2 = st.tabs(["🔍 Research", "📜 History"])
+    tab1, tab2 = st.tabs([" Research", " History"])
     
     with tab1:
         render_research_page(session_id)

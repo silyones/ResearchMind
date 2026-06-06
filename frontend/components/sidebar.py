@@ -36,7 +36,7 @@ def render_sidebar() -> str:
         st.divider()
         
         # Clear history button
-        if st.button("🗑️ Clear History", use_container_width=True):
+        if st.button(" Clear History", use_container_width=True):
             st.session_state.clear_history = True
             st.success("History cleared for this session!")
         
@@ -48,7 +48,7 @@ def render_sidebar() -> str:
             "ResearchMind uses AI to conduct comprehensive research on any topic. "
             "Powered by Groq, Tavily, and LangChain."
         )
-        st.caption("🔗 Backend: http://localhost:8000")
-        st.caption("📚 API Docs: http://localhost:8000/docs")
+        st.caption(" Backend: http://localhost:8000")
+        st.caption(" API Docs: http://localhost:8000/docs")
     
     return session_id

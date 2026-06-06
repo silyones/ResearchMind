@@ -9,7 +9,7 @@ def render_history_page(session_id: str) -> None:
     Args:
         session_id: Current session identifier
     """
-    st.header("📜 Conversation History")
+    st.header(" Conversation History")
     
     st.caption(f"Session: `{session_id}`")
     
@@ -59,12 +59,12 @@ def render_history_page(session_id: str) -> None:
                 st.divider()
     
     except httpx.ConnectError:
-        st.error("❌ Cannot connect to backend. Make sure it's running on http://localhost:8000")
+        st.error(" Cannot connect to backend. Make sure it's running on http://localhost:8000")
     except Exception as e:
-        st.error(f"❌ Error loading history: {str(e)}")
+        st.error(f" Error loading history: {str(e)}")
     
     # Export button
     col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("🔄 Refresh", use_container_width=True):
+        if st.button(" Refresh", use_container_width=True):
             st.rerun()
