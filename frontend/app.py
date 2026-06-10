@@ -7,7 +7,7 @@ from frontend.utils.ui import inject_styles
 def main():
     """Main Streamlit application entry point."""
     st.set_page_config(
-        page_title="ResearchMind",
+        page_title="Research Mind",
         page_icon="🔬",
         layout="wide",
         initial_sidebar_state="expanded",
@@ -29,6 +29,12 @@ def main():
 
     if "research_in_progress" not in st.session_state:
         st.session_state.research_in_progress = False
+
+    if "show_example_ui" not in st.session_state:
+        st.session_state.show_example_ui = True
+
+    if "example_widget_generation" not in st.session_state:
+        st.session_state.example_widget_generation = 0
 
     render_sidebar()
     render_research_page()

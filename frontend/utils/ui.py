@@ -22,6 +22,40 @@ def inject_styles() -> None:
         st.markdown(f"<style>{css_path.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
 
 
+def dismiss_examples() -> None:
+    """Remove example topic widgets from session state."""
+    st.session_state.show_example_ui = False
+    if "example_widget_generation" not in st.session_state:
+        st.session_state.example_widget_generation = 0
+    st.session_state.example_widget_generation += 1
+    for index in range(len(EXAMPLE_TOPICS)):
+        widget_key = f"example_topic_{index}"
+        if widget_key in st.session_state:
+            del st.session_state[widget_key]
+
+
+def begin_research_from_input() -> None:
+    topic = st.session_state.get("research_topic", "").strip()
+    if not topic:
+        return
+    dismiss_examples()
+    st.session_state.research_started = True
+    st.session_state.last_research = None
+    st.session_state.research_status_message = None
+    st.session_state.pending_research_topic = topic
+
+
+def begin_stream_from_input() -> None:
+    topic = st.session_state.get("research_topic", "").strip()
+    if not topic:
+        return
+    dismiss_examples()
+    st.session_state.research_started = True
+    st.session_state.last_research = None
+    st.session_state.research_status_message = None
+    st.session_state.pending_stream_topic = topic
+
+
 def render_hero() -> None:
     st.markdown(
         """
@@ -46,6 +80,7 @@ def render_hero() -> None:
 
 def _start_example_research(topic: str) -> None:
     st.session_state.research_topic = topic
+    dismiss_examples()
     st.session_state.research_started = True
     st.session_state.last_research = None
     st.session_state.research_status_message = None
@@ -53,11 +88,15 @@ def _start_example_research(topic: str) -> None:
 
 
 def render_example_topics() -> None:
+    if not st.session_state.get("show_example_ui", True):
+        return
+
+    generation = st.session_state.get("example_widget_generation", 0)
     st.caption("Try an example topic:")
     for index, topic in enumerate(EXAMPLE_TOPICS):
         st.button(
             topic,
-            key=f"example_topic_{index}",
+            key=f"example_topic_{generation}_{index}",
             on_click=_start_example_research,
             args=(topic,),
         )

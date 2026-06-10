@@ -9,6 +9,9 @@ from frontend.utils.pdf_export import generate_research_pdf
 from frontend.utils.report_export import get_markdown_download
 from frontend.utils.ui import (
     LOADING_STEPS,
+    begin_research_from_input,
+    begin_stream_from_input,
+    dismiss_examples,
     render_card,
     render_example_topics,
     render_finding,
@@ -134,13 +137,17 @@ def _conduct_research(topic: str) -> None:
             st.session_state.research_status_message = "Research completed!"
         else:
             st.error(f"Research failed: {result.get('error', 'Unknown error')}")
+            st.session_state.show_example_ui = True
 
     except httpx.ConnectError:
         st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
+        st.session_state.show_example_ui = True
     except httpx.TimeoutException:
         st.error("Research took too long. Try a simpler topic.")
+        st.session_state.show_example_ui = True
     except Exception as error:
         st.error(f"Error: {error}")
+        st.session_state.show_example_ui = True
     finally:
         st.session_state.research_in_progress = False
 
@@ -191,37 +198,30 @@ def _conduct_stream(topic: str) -> None:
                         )
                     except json.JSONDecodeError:
                         st.warning("Could not parse research results.")
+                        st.session_state.show_example_ui = True
                 else:
                     st.error(f"Stream failed with status {response.status_code}")
+                    st.session_state.show_example_ui = True
 
     except httpx.ConnectError:
         st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
+        st.session_state.show_example_ui = True
     except Exception as error:
         st.error(f"Streaming error: {error}")
+        st.session_state.show_example_ui = True
     finally:
         st.session_state.research_in_progress = False
 
 
-def _should_show_examples(
-    research_clicked: bool,
-    stream_clicked: bool,
-) -> bool:
-    if st.session_state.get("research_started"):
-        return False
-    if st.session_state.get("last_research"):
-        return False
-    if st.session_state.get("research_in_progress"):
-        return False
-    if st.session_state.get("pending_research_topic"):
-        return False
-    if st.session_state.get("pending_stream_topic"):
-        return False
-    if research_clicked or stream_clicked:
-        return False
-    return True
-
-
 def render_research_page() -> None:
+    if (
+        st.session_state.get("research_started")
+        or st.session_state.get("pending_research_topic")
+        or st.session_state.get("pending_stream_topic")
+        or st.session_state.get("research_in_progress")
+    ):
+        dismiss_examples()
+
     show_intro = (
         not st.session_state.get("research_started")
         and not st.session_state.get("last_research")
@@ -235,7 +235,7 @@ def render_research_page() -> None:
     col1, col2, col3 = st.columns([3, 1, 1])
 
     with col1:
-        topic = st.text_input(
+        st.text_input(
             "Enter a research topic",
             placeholder="e.g., 'Quantum Computing Breakthroughs in 2026'",
             key="research_topic",
@@ -243,48 +243,36 @@ def render_research_page() -> None:
 
     with col2:
         st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
-        research_clicked = st.button(
+        st.button(
             "Research",
             use_container_width=True,
             type="primary",
             key="research_btn",
+            on_click=begin_research_from_input,
         )
 
     with col3:
         st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
-        stream_clicked = st.button(
+        st.button(
             "Stream",
             use_container_width=True,
             key="stream_btn",
+            on_click=begin_stream_from_input,
         )
 
-    active_topic = topic.strip() if topic else ""
-
-    if research_clicked and active_topic:
-        st.session_state.research_started = True
-        st.session_state.pending_research_topic = active_topic
-        st.rerun()
-
-    if stream_clicked and active_topic:
-        st.session_state.research_started = True
-        st.session_state.pending_stream_topic = active_topic
-        st.rerun()
-
-    examples_placeholder = st.empty()
-    if _should_show_examples(research_clicked, stream_clicked):
-        with examples_placeholder.container():
+    examples_area = st.empty()
+    if st.session_state.get("show_example_ui", True):
+        with examples_area.container():
             render_example_topics()
     else:
-        examples_placeholder.empty()
+        examples_area.empty()
 
     pending_research = st.session_state.pop("pending_research_topic", None)
     if pending_research:
-        examples_placeholder.empty()
         _conduct_research(pending_research)
 
     pending_stream = st.session_state.pop("pending_stream_topic", None)
     if pending_stream:
-        examples_placeholder.empty()
         _conduct_stream(pending_stream)
 
     if st.session_state.get("research_status_message"):
