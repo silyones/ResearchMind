@@ -5,7 +5,6 @@ import streamlit as st
 
 EXAMPLE_TOPICS = [
     "New models released by Claude.ai",
-    "Quantum computing breakthroughs in 2026",
     "AI regulation updates worldwide",
     "Renewable energy trends",
 ]
@@ -43,14 +42,22 @@ def render_hero() -> None:
     )
 
 
+def _start_example_research(topic: str) -> None:
+    st.session_state.research_topic = topic
+    st.session_state.last_research = None
+    st.session_state.research_status_message = None
+    st.session_state.trigger_research = True
+
+
 def render_example_topics() -> None:
     st.caption("Try an example topic:")
-    cols = st.columns(len(EXAMPLE_TOPICS))
-    for index, example in enumerate(EXAMPLE_TOPICS):
-        with cols[index]:
-            if st.button(example, key=f"example_topic_{index}", use_container_width=True):
-                st.session_state.research_topic = example
-                st.rerun()
+    for index, topic in enumerate(EXAMPLE_TOPICS):
+        st.button(
+            topic,
+            key=f"example_topic_{index}",
+            on_click=_start_example_research,
+            args=(topic,),
+        )
 
 
 def status_message(text: str) -> None:

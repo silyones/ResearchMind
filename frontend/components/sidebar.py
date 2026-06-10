@@ -4,7 +4,7 @@ import streamlit as st
 def render_sidebar() -> None:
     """Render the sidebar with app title and info."""
     with st.sidebar:
-        st.markdown('<p class="rm-sidebar-title">🔬 ResearchMind</p>', unsafe_allow_html=True)
+        st.markdown('<p class="rm-sidebar-title">Research Mind</p>', unsafe_allow_html=True)
         st.markdown(
             """
             <div class="rm-badge-row">

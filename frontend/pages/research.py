@@ -112,6 +112,38 @@ def _run_with_loading_steps(request_fn):
     return result
 
 
+def _conduct_research(topic: str) -> None:
+    st.session_state.last_research = None
+    st.session_state.current_topic = topic
+    st.session_state.research_status_message = None
+
+    try:
+
+        def do_research():
+            response = httpx.post(
+                "http://localhost:8000/research",
+                json={"topic": topic},
+                timeout=300,
+            )
+            response.raise_for_status()
+            return response.json()
+
+        result = _run_with_loading_steps(do_research)
+
+        if result.get("success") and result.get("data"):
+            st.session_state.last_research = result["data"]
+            st.session_state.research_status_message = "Research completed!"
+        else:
+            st.error(f"Research failed: {result.get('error', 'Unknown error')}")
+
+    except httpx.ConnectError:
+        st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
+    except httpx.TimeoutException:
+        st.error("Research took too long. Try a simpler topic.")
+    except Exception as error:
+        st.error(f"Error: {error}")
+
+
 def render_research_page() -> None:
     show_hero = not st.session_state.get("last_research")
     if show_hero:
@@ -142,35 +174,10 @@ def render_research_page() -> None:
         render_example_topics()
 
     if search_button and topic:
-        st.session_state.last_research = None
-        st.session_state.current_topic = topic
-        st.session_state.research_status_message = None
+        _conduct_research(topic)
 
-        try:
-
-            def do_research():
-                response = httpx.post(
-                    "http://localhost:8000/research",
-                    json={"topic": topic},
-                    timeout=300,
-                )
-                response.raise_for_status()
-                return response.json()
-
-            result = _run_with_loading_steps(do_research)
-
-            if result.get("success") and result.get("data"):
-                st.session_state.last_research = result["data"]
-                st.session_state.research_status_message = "Research completed!"
-            else:
-                st.error(f"Research failed: {result.get('error', 'Unknown error')}")
-
-        except httpx.ConnectError:
-            st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
-        except httpx.TimeoutException:
-            st.error("Research took too long. Try a simpler topic.")
-        except Exception as error:
-            st.error(f"Error: {error}")
+    if st.session_state.pop("trigger_research", False) and topic:
+        _conduct_research(topic)
 
     if stream_button and topic:
         st.session_state.last_research = None
