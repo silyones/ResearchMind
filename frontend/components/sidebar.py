@@ -10,7 +10,7 @@ def render_sidebar() -> str:
     """
     with st.sidebar:
         # App title
-        st.title("ResearchMind 🔬")
+        st.title("Research Mind")
         st.divider()
         
         # Session ID management

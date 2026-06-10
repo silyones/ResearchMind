@@ -88,7 +88,7 @@ def render_research_page(session_id: str) -> None:
     with col1:
         topic = st.text_input(
             "Enter a research topic",
-            placeholder="e.g., 'Quantum Computing Breakthroughs in 2024'",
+            placeholder="e.g., 'Quantum Computing Breakthroughs in 2026'",
             help="Enter any topic you'd like to research",
         )
 
