@@ -2,33 +2,108 @@ import streamlit as st
 import httpx
 import json
 
+from frontend.utils.pdf_export import generate_research_pdf
+
+
+def _render_report(research: dict, session_id: str) -> None:
+    topic = research.get("topic", "Research Results")
+
+    header_col, download_col = st.columns([4, 1])
+    with header_col:
+        st.header(topic)
+    with download_col:
+        try:
+            pdf_bytes, pdf_name = generate_research_pdf(research)
+            st.download_button(
+                label="Download PDF",
+                data=pdf_bytes,
+                file_name=pdf_name,
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        except Exception as error:
+            st.caption(f"PDF unavailable: {error}")
+
+    overview = research.get("overview", "")
+    if overview:
+        st.markdown(f"*{overview}*")
+
+    report = research.get("report", "")
+    if report:
+        st.markdown("---")
+        st.subheader("Research Report")
+        st.markdown(report)
+    elif research.get("key_findings"):
+        st.markdown("---")
+        st.subheader("Research Report")
+        for index, finding in enumerate(research["key_findings"], start=1):
+            st.markdown(f"**{index}.** {finding.get('finding', '')}")
+
+    if research.get("controversies"):
+        st.subheader("Controversies & Debates")
+        for controversy in research["controversies"]:
+            st.markdown(f"- {controversy}")
+
+    if research.get("expert_opinions"):
+        st.subheader("Expert Opinions")
+        for opinion in research["expert_opinions"]:
+            st.markdown(f"- {opinion}")
+
+    if report and research.get("key_findings"):
+        with st.expander("Key Findings (Detailed)", expanded=False):
+            for index, finding in enumerate(research["key_findings"], start=1):
+                st.markdown(f"**{index}.** {finding.get('finding', '')}")
+
+    conclusion = research.get("conclusion", "")
+    if conclusion:
+        st.markdown("---")
+        st.subheader("Conclusion")
+        st.markdown(conclusion)
+
+    sources = research.get("sources") or []
+    if sources:
+        st.markdown("---")
+        st.subheader("Sources & References")
+        for index, source in enumerate(sources, start=1):
+            title = source.get("title", "Untitled")
+            url = source.get("url", "")
+            date = source.get("date", "Unknown date")
+            if url:
+                st.markdown(f"{index}. [{title}]({url}) — *{date}*")
+            else:
+                st.markdown(f"{index}. **{title}** — *{date}*")
+
+    generated_at = research.get("generated_at", "")
+    if generated_at:
+        st.divider()
+        st.caption(f"Generated at: {generated_at}")
+        st.caption(f"Session: `{session_id}`")
+
 
 def render_research_page(session_id: str) -> None:
-    st.header(" Research")
-    
+    st.header("Research")
+
     col1, col2, col3 = st.columns([3, 1, 1])
-    
+
     with col1:
         topic = st.text_input(
             "Enter a research topic",
             placeholder="e.g., 'Quantum Computing Breakthroughs in 2024'",
             help="Enter any topic you'd like to research",
         )
-    
+
     with col2:
-        search_button = st.button(" Research", use_container_width=True)
-    
+        search_button = st.button("Research", use_container_width=True)
+
     with col3:
-        stream_button = st.button(" Stream", use_container_width=True)
-    
-    # Non-streaming research
+        stream_button = st.button("Stream", use_container_width=True)
+
     if search_button and topic:
-        # Clear old results immediately
         st.session_state.last_research = None
         st.session_state.current_topic = topic
-        
+
         try:
-            with st.spinner(" Conducting research... This may take a minute."):
+            with st.spinner("Conducting research... This may take a minute."):
                 response = httpx.post(
                     "http://localhost:8000/research",
                     json={"topic": topic},
@@ -37,31 +112,29 @@ def render_research_page(session_id: str) -> None:
                 )
                 response.raise_for_status()
                 result = response.json()
-                
+
                 if result.get("success") and result.get("data"):
                     st.session_state.last_research = result["data"]
-                    st.success(" Research completed!")
+                    st.success("Research completed!")
                 else:
-                    st.error(f" Research failed: {result.get('error', 'Unknown error')}")
-        
+                    st.error(f"Research failed: {result.get('error', 'Unknown error')}")
+
         except httpx.ConnectError:
-            st.error(" Cannot connect to backend. Make sure it's running on http://localhost:8000")
+            st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
         except httpx.TimeoutException:
-            st.error("⏱️ Research took too long. Try a simpler topic.")
-        except Exception as e:
-            st.error(f" Error: {str(e)}")
-    
-    # Streaming research
+            st.error("Research took too long. Try a simpler topic.")
+        except Exception as error:
+            st.error(f"Error: {error}")
+
     if stream_button and topic:
-        # Clear old results immediately
         st.session_state.last_research = None
         st.session_state.current_topic = topic
-        
+
         try:
             status_placeholder = st.empty()
             stream_placeholder = st.empty()
             accumulated_text = ""
-            
+
             with httpx.stream(
                 "POST",
                 "http://localhost:8000/research/stream",
@@ -73,88 +146,39 @@ def render_research_page(session_id: str) -> None:
                     for line in response.iter_lines():
                         if line.startswith("data: "):
                             chunk = line.replace("data: ", "").strip()
-                            
+
                             if chunk == "[DONE]":
                                 break
-                            elif chunk.startswith("[ERROR]"):
-                                st.error(f" {chunk}")
+                            if chunk.startswith("[ERROR]"):
+                                st.error(chunk)
                                 break
-                            else:
-                                accumulated_text += chunk
-                                status_placeholder.info("📡 Receiving research data...")
-                    
+
+                            accumulated_text += chunk
+                            status_placeholder.info("Receiving research data...")
+
                     status_placeholder.empty()
                     stream_placeholder.empty()
-                    
+
                     try:
                         clean_text = accumulated_text.strip()
-                        json_start = clean_text.find('{')
+                        json_start = clean_text.find("{")
                         if json_start != -1:
                             clean_text = clean_text[json_start:]
                         research_data = json.loads(clean_text)
                         st.session_state.last_research = research_data
-                        st.success(" Research complete!")
+                        st.success("Research complete!")
                     except json.JSONDecodeError:
-                        st.warning(" Could not parse research results.")
+                        st.warning("Could not parse research results.")
                 else:
                     st.error(f"Stream failed with status {response.status_code}")
-        
+
         except httpx.ConnectError:
-            st.error(" Cannot connect to backend. Make sure it's running on http://localhost:8000")
-        except Exception as e:
-            st.error(f" Streaming error: {str(e)}")
-    
-    # Display research results
+            st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
+        except Exception as error:
+            st.error(f"Streaming error: {error}")
+
     if st.session_state.get("last_research"):
-        research = st.session_state.last_research
-        
         st.divider()
-        
-        st.header(research.get("topic", "Research Results"))
-        st.write(research.get("overview", ""))
-        
-        if research.get("key_findings"):
-            with st.expander(" Key Findings", expanded=True):
-                for i, finding in enumerate(research["key_findings"], 1):
-                    st.write(f"**{i}. {finding.get('finding', '')}**")
-                    source_url = finding.get("source_url", "")
-                    if source_url:
-                        st.caption(f"Source: [{source_url}]({source_url})")
-        
-        if research.get("controversies"):
-            with st.expander(" Controversies & Debates"):
-                for controversy in research["controversies"]:
-                    st.write(f"• {controversy}")
-        
-        if research.get("expert_opinions"):
-            with st.expander(" Expert Opinions"):
-                for opinion in research["expert_opinions"]:
-                    st.write(f"• {opinion}")
-        
-        if research.get("conclusion"):
-            st.subheader(" Conclusion")
-            st.write(research["conclusion"])
-        
-        if research.get("sources"):
-            with st.expander(" Sources"):
-                for i, source in enumerate(research["sources"], 1):
-                    title = source.get("title", "Untitled")
-                    url = source.get("url", "")
-                    date = source.get("date", "Unknown date")
-                    
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        st.write(f"**{i}. {title}**")
-                        st.caption(f"Date: {date}")
-                    with col2:
-                        if url:
-                            st.write(f"[ Link]({url})")
-        
-        generated_at = research.get("generated_at", "")
-        if generated_at:
-            st.divider()
-            st.caption(f"Generated at: {generated_at}")
-            st.caption(f"Session: `{session_id}`")
-    
+        _render_report(st.session_state.last_research, session_id)
     elif not topic and (search_button or stream_button):
-        st.warning(" Please enter a topic to research")
+        st.warning("Please enter a topic to research")
