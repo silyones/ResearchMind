@@ -28,13 +28,15 @@ def render_hero() -> None:
         <div class="rm-hero">
             <p class="rm-hero-title">AI-powered research reports in seconds</p>
             <p class="rm-hero-subtitle">
-                Enter any topic below. ResearchMind searches the web, analyzes sources,
+                Enter any topic below. Research Mind searches the web, analyzes sources,
                 and delivers a structured report you can read or download as PDF.
             </p>
-            <div class="rm-steps">
-                <span class="rm-step"><strong>1.</strong> Search</span>
-                <span class="rm-step"><strong>2.</strong> Analyze</span>
-                <span class="rm-step"><strong>3.</strong> Report + PDF</span>
+            <div class="rm-steps-flow">
+                <span class="rm-step-label"><strong>1.</strong> Search</span>
+                <span class="rm-step-arrow" aria-hidden="true">→</span>
+                <span class="rm-step-label"><strong>2.</strong> Analyze</span>
+                <span class="rm-step-arrow" aria-hidden="true">→</span>
+                <span class="rm-step-label"><strong>3.</strong> Report + PDF</span>
             </div>
         </div>
         """,
@@ -44,26 +46,20 @@ def render_hero() -> None:
 
 def _start_example_research(topic: str) -> None:
     st.session_state.research_topic = topic
-    st.session_state.selected_example = topic
+    st.session_state.research_started = True
     st.session_state.last_research = None
     st.session_state.research_status_message = None
-    st.session_state.trigger_research = True
+    st.session_state.pending_research_topic = topic
 
 
 def render_example_topics() -> None:
-    selected = st.session_state.get("selected_example")
-    topics_to_show = [selected] if selected else EXAMPLE_TOPICS
-
     st.caption("Try an example topic:")
-    for index, topic in enumerate(topics_to_show):
-        if not topic:
-            continue
+    for index, topic in enumerate(EXAMPLE_TOPICS):
         st.button(
             topic,
             key=f"example_topic_{index}",
             on_click=_start_example_research,
             args=(topic,),
-            disabled=bool(selected),
         )
 
 

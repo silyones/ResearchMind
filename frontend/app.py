@@ -24,6 +24,12 @@ def main():
     if "research_topic" not in st.session_state:
         st.session_state.research_topic = ""
 
+    if "research_started" not in st.session_state:
+        st.session_state.research_started = False
+
+    if "research_in_progress" not in st.session_state:
+        st.session_state.research_in_progress = False
+
     render_sidebar()
     render_research_page()
 

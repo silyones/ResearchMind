@@ -84,7 +84,6 @@ def _render_report(research: dict) -> None:
     sources = research.get("sources") or []
     if sources:
         st.subheader("Sources & References")
-        st.markdown('<div class="rm-sources">', unsafe_allow_html=True)
         for index, source in enumerate(sources, start=1):
             title = source.get("title", "Untitled")
             url = source.get("url", "")
@@ -93,7 +92,6 @@ def _render_report(research: dict) -> None:
                 st.markdown(f"{index}. [{title}]({url}) — *{date}*")
             else:
                 st.markdown(f"{index}. **{title}** — *{date}*")
-        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _run_with_loading_steps(request_fn):
@@ -113,6 +111,7 @@ def _run_with_loading_steps(request_fn):
 
 
 def _conduct_research(topic: str) -> None:
+    st.session_state.research_in_progress = True
     st.session_state.last_research = None
     st.session_state.current_topic = topic
     st.session_state.research_status_message = None
@@ -134,23 +133,101 @@ def _conduct_research(topic: str) -> None:
             st.session_state.last_research = result["data"]
             st.session_state.research_status_message = "Research completed!"
         else:
-            st.session_state.selected_example = None
             st.error(f"Research failed: {result.get('error', 'Unknown error')}")
 
     except httpx.ConnectError:
-        st.session_state.selected_example = None
         st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
     except httpx.TimeoutException:
-        st.session_state.selected_example = None
         st.error("Research took too long. Try a simpler topic.")
     except Exception as error:
-        st.session_state.selected_example = None
         st.error(f"Error: {error}")
+    finally:
+        st.session_state.research_in_progress = False
+
+
+def _conduct_stream(topic: str) -> None:
+    st.session_state.research_in_progress = True
+    st.session_state.last_research = None
+    st.session_state.current_topic = topic
+    st.session_state.research_status_message = None
+
+    try:
+        with st.status("Streaming research…", expanded=True) as status:
+            st.write("Connecting to backend…")
+            accumulated_text = ""
+
+            with httpx.stream(
+                "POST",
+                "http://localhost:8000/research/stream",
+                json={"topic": topic},
+                timeout=300,
+            ) as response:
+                if response.status_code == 200:
+                    st.write("Receiving live output…")
+                    for line in response.iter_lines():
+                        if line.startswith("data: "):
+                            chunk = line.replace("data: ", "").strip()
+
+                            if chunk == "[DONE]":
+                                break
+                            if chunk.startswith("[ERROR]"):
+                                st.error(chunk)
+                                break
+
+                            accumulated_text += chunk
+
+                    try:
+                        clean_text = accumulated_text.strip()
+                        json_start = clean_text.find("{")
+                        if json_start != -1:
+                            clean_text = clean_text[json_start:]
+                        research_data = json.loads(clean_text)
+                        st.session_state.last_research = research_data
+                        st.session_state.research_status_message = "Research completed!"
+                        status.update(
+                            label="Research complete!",
+                            state="complete",
+                            expanded=False,
+                        )
+                    except json.JSONDecodeError:
+                        st.warning("Could not parse research results.")
+                else:
+                    st.error(f"Stream failed with status {response.status_code}")
+
+    except httpx.ConnectError:
+        st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
+    except Exception as error:
+        st.error(f"Streaming error: {error}")
+    finally:
+        st.session_state.research_in_progress = False
+
+
+def _should_show_examples(
+    research_clicked: bool,
+    stream_clicked: bool,
+) -> bool:
+    if st.session_state.get("research_started"):
+        return False
+    if st.session_state.get("last_research"):
+        return False
+    if st.session_state.get("research_in_progress"):
+        return False
+    if st.session_state.get("pending_research_topic"):
+        return False
+    if st.session_state.get("pending_stream_topic"):
+        return False
+    if research_clicked or stream_clicked:
+        return False
+    return True
 
 
 def render_research_page() -> None:
-    show_hero = not st.session_state.get("last_research")
-    if show_hero:
+    show_intro = (
+        not st.session_state.get("research_started")
+        and not st.session_state.get("last_research")
+    )
+
+    if show_intro:
         render_hero()
 
     st.header("Research")
@@ -166,7 +243,7 @@ def render_research_page() -> None:
 
     with col2:
         st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
-        search_button = st.button(
+        research_clicked = st.button(
             "Research",
             use_container_width=True,
             type="primary",
@@ -175,76 +252,40 @@ def render_research_page() -> None:
 
     with col3:
         st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
-        stream_button = st.button(
+        stream_clicked = st.button(
             "Stream",
             use_container_width=True,
             key="stream_btn",
         )
 
-    #t.caption("Research runs a full report · Stream shows live token output")
+    active_topic = topic.strip() if topic else ""
 
-    if show_hero:
-        render_example_topics()
+    if research_clicked and active_topic:
+        st.session_state.research_started = True
+        st.session_state.pending_research_topic = active_topic
+        st.rerun()
 
-    if search_button and topic:
-        st.session_state.selected_example = None
-        _conduct_research(topic)
+    if stream_clicked and active_topic:
+        st.session_state.research_started = True
+        st.session_state.pending_stream_topic = active_topic
+        st.rerun()
 
-    if st.session_state.pop("trigger_research", False) and topic:
-        _conduct_research(topic)
+    examples_placeholder = st.empty()
+    if _should_show_examples(research_clicked, stream_clicked):
+        with examples_placeholder.container():
+            render_example_topics()
+    else:
+        examples_placeholder.empty()
 
-    if stream_button and topic:
-        st.session_state.last_research = None
-        st.session_state.current_topic = topic
-        st.session_state.research_status_message = None
+    pending_research = st.session_state.pop("pending_research_topic", None)
+    if pending_research:
+        examples_placeholder.empty()
+        _conduct_research(pending_research)
 
-        try:
-            with st.status("Streaming research…", expanded=True) as status:
-                st.write("Connecting to backend…")
-                accumulated_text = ""
-
-                with httpx.stream(
-                    "POST",
-                    "http://localhost:8000/research/stream",
-                    json={"topic": topic},
-                    timeout=300,
-                ) as response:
-                    if response.status_code == 200:
-                        st.write("Receiving live output…")
-                        for line in response.iter_lines():
-                            if line.startswith("data: "):
-                                chunk = line.replace("data: ", "").strip()
-
-                                if chunk == "[DONE]":
-                                    break
-                                if chunk.startswith("[ERROR]"):
-                                    st.error(chunk)
-                                    break
-
-                                accumulated_text += chunk
-
-                        try:
-                            clean_text = accumulated_text.strip()
-                            json_start = clean_text.find("{")
-                            if json_start != -1:
-                                clean_text = clean_text[json_start:]
-                            research_data = json.loads(clean_text)
-                            st.session_state.last_research = research_data
-                            st.session_state.research_status_message = "Research completed!"
-                            status.update(
-                                label="Research complete!",
-                                state="complete",
-                                expanded=False,
-                            )
-                        except json.JSONDecodeError:
-                            st.warning("Could not parse research results.")
-                    else:
-                        st.error(f"Stream failed with status {response.status_code}")
-
-        except httpx.ConnectError:
-            st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
-        except Exception as error:
-            st.error(f"Streaming error: {error}")
+    pending_stream = st.session_state.pop("pending_stream_topic", None)
+    if pending_stream:
+        examples_placeholder.empty()
+        _conduct_stream(pending_stream)
 
     if st.session_state.get("research_status_message"):
         msg_col, _, _ = st.columns([3, 1, 1])
@@ -254,5 +295,3 @@ def render_research_page() -> None:
     if st.session_state.get("last_research"):
         st.divider()
         _render_report(st.session_state.last_research)
-    elif not topic and (search_button or stream_button):
-        st.warning("Please enter a topic to research")
