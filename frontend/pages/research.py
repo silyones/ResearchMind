@@ -134,13 +134,17 @@ def _conduct_research(topic: str) -> None:
             st.session_state.last_research = result["data"]
             st.session_state.research_status_message = "Research completed!"
         else:
+            st.session_state.selected_example = None
             st.error(f"Research failed: {result.get('error', 'Unknown error')}")
 
     except httpx.ConnectError:
+        st.session_state.selected_example = None
         st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
     except httpx.TimeoutException:
+        st.session_state.selected_example = None
         st.error("Research took too long. Try a simpler topic.")
     except Exception as error:
+        st.session_state.selected_example = None
         st.error(f"Error: {error}")
 
 
@@ -174,6 +178,7 @@ def render_research_page() -> None:
         render_example_topics()
 
     if search_button and topic:
+        st.session_state.selected_example = None
         _conduct_research(topic)
 
     if st.session_state.pop("trigger_research", False) and topic:
