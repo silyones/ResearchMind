@@ -5,6 +5,13 @@ import json
 from frontend.utils.pdf_export import generate_research_pdf
 
 
+def _status_message(text: str) -> None:
+    st.markdown(
+        f'<p style="color:#21c354;margin:0.25rem 0 0;font-size:0.875rem;">{text}</p>',
+        unsafe_allow_html=True,
+    )
+
+
 def _render_report(research: dict, session_id: str) -> None:
     topic = research.get("topic", "Research Results")
 
@@ -102,6 +109,7 @@ def render_research_page(session_id: str) -> None:
     if search_button and topic:
         st.session_state.last_research = None
         st.session_state.current_topic = topic
+        st.session_state.research_status_message = None
 
         try:
             with st.spinner("Conducting research... This may take a minute."):
@@ -116,7 +124,7 @@ def render_research_page(session_id: str) -> None:
 
                 if result.get("success") and result.get("data"):
                     st.session_state.last_research = result["data"]
-                    st.success("Research completed!")
+                    st.session_state.research_status_message = "Research completed!"
                 else:
                     st.error(f"Research failed: {result.get('error', 'Unknown error')}")
 
@@ -130,6 +138,7 @@ def render_research_page(session_id: str) -> None:
     if stream_button and topic:
         st.session_state.last_research = None
         st.session_state.current_topic = topic
+        st.session_state.research_status_message = None
 
         try:
             status_placeholder = st.empty()
@@ -167,7 +176,7 @@ def render_research_page(session_id: str) -> None:
                             clean_text = clean_text[json_start:]
                         research_data = json.loads(clean_text)
                         st.session_state.last_research = research_data
-                        st.success("Research complete!")
+                        st.session_state.research_status_message = "Research completed!"
                     except json.JSONDecodeError:
                         st.warning("Could not parse research results.")
                 else:
@@ -177,6 +186,11 @@ def render_research_page(session_id: str) -> None:
             st.error("Cannot connect to backend. Make sure it's running on http://localhost:8000")
         except Exception as error:
             st.error(f"Streaming error: {error}")
+
+    if st.session_state.get("research_status_message"):
+        msg_col, _, _ = st.columns([3, 1, 1])
+        with msg_col:
+            _status_message(st.session_state.research_status_message)
 
     if st.session_state.get("last_research"):
         st.divider()
