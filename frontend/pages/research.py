@@ -12,7 +12,7 @@ def _status_message(text: str) -> None:
     )
 
 
-def _render_report(research: dict, session_id: str) -> None:
+def _render_report(research: dict) -> None:
     topic = research.get("topic", "Research Results")
 
     header_col, download_col = st.columns([4, 1])
@@ -84,10 +84,9 @@ def _render_report(research: dict, session_id: str) -> None:
     if generated_at:
         st.divider()
         st.caption(f"Generated at: {generated_at}")
-        st.caption(f"Session: `{session_id}`")
 
 
-def render_research_page(session_id: str) -> None:
+def render_research_page() -> None:
     st.header("Research")
 
     col1, col2, col3 = st.columns([3, 1, 1])
@@ -116,7 +115,6 @@ def render_research_page(session_id: str) -> None:
                 response = httpx.post(
                     "http://localhost:8000/research",
                     json={"topic": topic},
-                    params={"session_id": session_id},
                     timeout=300,
                 )
                 response.raise_for_status()
@@ -149,7 +147,6 @@ def render_research_page(session_id: str) -> None:
                 "POST",
                 "http://localhost:8000/research/stream",
                 json={"topic": topic},
-                params={"session_id": session_id},
                 timeout=300,
             ) as response:
                 if response.status_code == 200:
@@ -194,6 +191,6 @@ def render_research_page(session_id: str) -> None:
 
     if st.session_state.get("last_research"):
         st.divider()
-        _render_report(st.session_state.last_research, session_id)
+        _render_report(st.session_state.last_research)
     elif not topic and (search_button or stream_button):
         st.warning("Please enter a topic to research")
