@@ -89,13 +89,14 @@ def render_research_page(session_id: str) -> None:
         topic = st.text_input(
             "Enter a research topic",
             placeholder="e.g., 'Quantum Computing Breakthroughs in 2026'",
-            help="Enter any topic you'd like to research",
         )
 
     with col2:
+        st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
         search_button = st.button("Research", use_container_width=True)
 
     with col3:
+        st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
         stream_button = st.button("Stream", use_container_width=True)
 
     if search_button and topic:

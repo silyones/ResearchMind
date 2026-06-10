@@ -24,7 +24,6 @@ def render_sidebar() -> str:
         session_id = st.text_input(
             "Session ID",
             value=st.session_state.session_id,
-            help="Unique identifier for your conversation. Use the same ID to continue previous conversations.",
         )
         
         # Update session_state
