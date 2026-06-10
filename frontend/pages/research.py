@@ -166,13 +166,22 @@ def render_research_page() -> None:
 
     with col2:
         st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
-        search_button = st.button("Research", use_container_width=True, type="primary")
+        search_button = st.button(
+            "Research",
+            use_container_width=True,
+            type="primary",
+            key="research_btn",
+        )
 
     with col3:
         st.markdown("<div style='height: 1.75rem'></div>", unsafe_allow_html=True)
-        stream_button = st.button("Stream", use_container_width=True)
+        stream_button = st.button(
+            "Stream",
+            use_container_width=True,
+            key="stream_btn",
+        )
 
-    st.caption("Research runs a full report · Stream shows live token output")
+    #t.caption("Research runs a full report · Stream shows live token output")
 
     if show_hero:
         render_example_topics()

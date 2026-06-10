@@ -19,8 +19,10 @@ def render_sidebar() -> None:
 
         st.subheader("About")
         st.caption(
-            "ResearchMind uses AI to conduct comprehensive research on any topic — "
-            "from quick summaries to full downloadable reports."
+            "ResearchMind helps you research any topic with AI. "
+            "It searches the web, analyzes sources, and builds structured reports "
+            "with key findings and references. "
+            "You can read results in the app or download them as PDF or Markdown."
         )
 
         with st.expander("Developer links"):
