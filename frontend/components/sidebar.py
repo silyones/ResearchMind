@@ -1,54 +1,30 @@
 import streamlit as st
 
 
-def render_sidebar() -> str:
-    """
-    Render the sidebar with app title, session management, and controls.
-    
-    Returns:
-        Current session_id
-    """
+def render_sidebar() -> None:
+    """Render the sidebar with app title and info."""
     with st.sidebar:
-        # App title
-        st.title("ResearchMind 🔬")
-        st.divider()
-        
-        # Session ID management
-        st.subheader("Session")
-        
-        # Initialize session_id in session_state if not present
-        if "session_id" not in st.session_state:
-            st.session_state.session_id = "default"
-        
-        # Session ID input
-        session_id = st.text_input(
-            "Session ID",
-            value=st.session_state.session_id,
-            help="Unique identifier for your conversation. Use the same ID to continue previous conversations.",
+        st.markdown('<p class="rm-sidebar-title">Research Mind</p>', unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="rm-badge-row">
+                <span class="rm-badge">Groq</span>
+                <span class="rm-badge">Tavily</span>
+                <span class="rm-badge">LangChain</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        
-        # Update session_state
-        st.session_state.session_id = session_id
-        
-        # Display current session ID
-        st.caption(f"Current: `{session_id}`")
-        
         st.divider()
-        
-        # Clear history button
-        if st.button(" Clear History", use_container_width=True):
-            st.session_state.clear_history = True
-            st.success("History cleared for this session!")
-        
-        st.divider()
-        
-        # Info section
+
         st.subheader("About")
         st.caption(
-            "ResearchMind uses AI to conduct comprehensive research on any topic. "
-            "Powered by Groq, Tavily, and LangChain."
+            "ResearchMind helps you research any topic with AI. "
+            "It searches the web, analyzes sources, and builds structured reports "
+            "with key findings and references. "
+            "You can read results in the app or download them as PDF or Markdown."
         )
-        st.caption(" Backend: http://localhost:8000")
-        st.caption(" API Docs: http://localhost:8000/docs")
-    
-    return session_id
+
+        with st.expander("Developer links"):
+            st.markdown("[Backend API](http://localhost:8000)")
+            st.markdown("[API Docs](http://localhost:8000/docs)")

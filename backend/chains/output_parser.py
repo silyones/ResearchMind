@@ -16,6 +16,7 @@ fixing_llm = ChatGroq(
     api_key=settings.groq_api_key,
     model_name=settings.model_name_llm,
     temperature=0,
+    max_tokens=settings.max_llm_tokens,
 )
 
 # Wrap with OutputFixingParser for auto-correction

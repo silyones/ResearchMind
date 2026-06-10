@@ -14,8 +14,13 @@ class Settings(BaseSettings):
     # Model Configuration
     model_name: str = Field(default="llama-3.1-8b-instant", validation_alias="MODEL_NAME")
     model_name_llm: str = Field(default="llama-3.1-8b-instant", validation_alias="MODEL_NAME_LLM")
-    max_search_results: int = 5
+    max_search_results: int = 3
     max_agent_iterations: int = 10
+    max_search_content_chars: int = 500
+    max_agent_context_chars: int = 6000
+    max_context_chars: int = 8000
+    max_llm_tokens: int = 1024
+    max_synthesis_tokens: int = 2048
     
     # LangSmith Configuration
     langsmith_tracing: bool = False

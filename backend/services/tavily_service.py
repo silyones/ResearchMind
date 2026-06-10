@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Set
 from tavily import TavilyClient
 from backend.config import settings
 from backend.utils.logger import get_logger
+from backend.utils.text_limits import truncate_text
 
 logger = get_logger(__name__)
 
@@ -44,7 +45,10 @@ async def search(query: str) -> List[Dict[str, Any]]:
                 formatted_result = {
                     "title": result.get("title", ""),
                     "url": result.get("url", ""),
-                    "content": result.get("content", ""),
+                    "content": truncate_text(
+                        result.get("content", ""),
+                        settings.max_search_content_chars,
+                    ),
                     "published_date": result.get("published_date", None)
                 }
                 results.append(formatted_result)
